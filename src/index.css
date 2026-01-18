@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Cole aqui embaixo qualquer outro código CSS que o Bolt tenha gerado */
+body {
+  background-color: #020617; /* Garante o fundo azul escuro */
+  color: white;
+}
+
+/* Custom Scrollbar para Chrome, Edge e Safari */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #0f172a;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #eab308; /* Cor amarela/dourada */
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #ca8a04;
+}
+
+/* Para Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #eab308 #0f172a;
+}
