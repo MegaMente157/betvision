@@ -2,6 +2,7 @@ import { Activity, TrendingUp, BarChart3, Clock, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { footballApi } from './services/api';
+import { newsApi } from './services/api';
 
 // Interface para organizar os dados da API
 interface LiveGame {
@@ -14,42 +15,34 @@ interface LiveGame {
 export default function App() {
   const [liveGames, setLiveGames] = useState<LiveGame[]>([]);
   const [loading, setLoading] = useState(true);
+  const [articles, setArticles] = useState<any[]>([]); // Novo estado para notícias
+  const [featuredNews, setFeaturedNews] = useState<any>(null);
 
   useEffect(() => {
+    // 1. FUNÇÃO PARA BUSCAR JOGOS
     const fetchGames = async () => {
       const CACHE_KEY = 'betvision_live_games';
       const CACHE_TIME_KEY = 'betvision_cache_time';
-      const TEN_MINUTES = 10 * 60 * 1000; // Tempo em milissegundos
-
+      const TEN_MINUTES = 10 * 60 * 1000;
       const cachedData = localStorage.getItem(CACHE_KEY);
       const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
       const now = new Date().getTime();
 
-      // Se houver cache e ele tiver menos de 10 minutos, usa o cache
+
       if (cachedData && cachedTime && (now - parseInt(cachedTime) < TEN_MINUTES)) {
-        console.log("🚀 Usando dados do Cache (Economizando API)");
         setLiveGames(JSON.parse(cachedData));
         setLoading(false);
         return;
       }
 
-      // Se não tiver cache ou expirou, faz a chamada real
       try {
-        console.log("📡 Chamada real à API efetuada!");
         const response = await footballApi.get('/fixtures?live=all');
         const games = response.data.response || [];
+        const ligasDesejadas = [742, 140, 71, 39, 2]; // Adicionei mais algumas famosas
+        const gamesFiltrados = games.filter((g: any) => ligasDesejadas.includes(g.league.id));
 
-        // Salva no LocalStorage
-        localStorage.setItem(CACHE_KEY, JSON.stringify(games));
+        localStorage.setItem(CACHE_KEY, JSON.stringify(gamesFiltrados));
         localStorage.setItem(CACHE_TIME_KEY, now.toString());
-
-        // IDs de exemplo: 71 (Série A), 39 (Premier League), 2 (Champions League)
-        const ligasDesejadas = [742, 140];
-
-        const gamesFiltrados = response.data.response.filter((g: any) =>
-          ligasDesejadas.includes(g.league.id)
-        );
-
         setLiveGames(gamesFiltrados);
         setLoading(false);
       } catch (error) {
@@ -58,12 +51,56 @@ export default function App() {
       }
     };
 
-    fetchGames();
+    // 2. FUNÇÃO PARA BUSCAR NOTÍCIAS (COLOQUE AQUI)
+    const fetchNews = async () => {
+      try {
+        const response = await newsApi.get('/everything', {
+          params: {
+            q: 'futebol AND (Flamengo OR Palmeiras OR Corinthians OR "Mercado da Bola")',
+            language: 'pt',
+            sortBy: 'publishedAt',
+            pageSize: 6,
+            apiKey: '4593b9c602cf4db69f728b30136b9563'
+          }
+        });
+        setArticles(response.data.articles);
+      } catch (error) {
+        console.error("Erro ao buscar notícias:", error);
+      }
+    };
 
-    // Opcional: Aumentar o intervalo do setInterval para 10 minutos também
-    const interval = setInterval(fetchGames, 600000);
+    const fetchFeaturedNews = async () => {
+      try {
+        const response = await newsApi.get('/everything', {
+          params: {
+            // Buscamos pelo time mais popular (Flamengo) ou termos de alta busca
+            q: 'Flamengo OR "Seleção Brasileira" OR Neymar',
+            language: 'pt',
+            sortBy: 'relevancy', // Pega a mais relevante/buscada
+            pageSize: 1, // Queremos apenas a melhor
+            apiKey: '4593b9c602cf4db69f728b30136b9563'
+          }
+        });
+        setFeaturedNews(response.data.articles[0]);
+      } catch (error) {
+        console.error("Erro ao buscar notícia destaque:", error);
+      }
+    };
+
+    // 3. EXECUTA AS DUAS CHAMADAS
+    fetchGames();
+    fetchNews();
+    fetchFeaturedNews();
+
+    const interval = setInterval(() => {
+      fetchGames();
+      fetchNews();
+      fetchFeaturedNews();
+    }, 600000); // Atualiza tudo a cada 10 min
+
     return () => clearInterval(interval);
   }, []);
+
   // Função simples para gerar uma sugestão automática baseada no placar
   const getAISuggestion = (homeGoals: number, awayGoals: number, elapsed: number) => {
     const totalGoals = homeGoals + awayGoals;
@@ -106,21 +143,43 @@ export default function App() {
           <div className="lg:col-span-8 space-y-8">
             <section>
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <span className="w-1 h-6 bg-yellow-500 rounded-full"></span>
-                Destaque do Dia
+                <span className="w-1 h-6 bg-red-600 rounded-full"></span>
+                Em Alta Agora
               </h2>
-              <div className="relative aspect-video rounded-2xl overflow-hidden border border-slate-800 shadow-2xl group">
-                <img
-                  src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=1200"
-                  alt="Partida em destaque"
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent"></div>
-                <div className="absolute bottom-0 p-8">
-                  <span className="bg-blue-600 text-xs font-bold px-2 py-1 rounded mb-4 inline-block uppercase">Análise de IA</span>
-                  <h3 className="text-4xl font-black leading-tight">Como lucrar em jogos empatados após os 70 minutos?</h3>
+
+              {featuredNews ? (
+                <a href={featuredNews.url} target="_blank" rel="noopener noreferrer">
+                  <div className="relative aspect-video rounded-2xl overflow-hidden border border-slate-800 shadow-2xl group cursor-pointer">
+                    <img
+                      src={featuredNews.urlToImage || "https://images.unsplash.com/photo-1574629810360-7efbbe195018"}
+                      alt={featuredNews.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-[#020617]/20 to-transparent"></div>
+
+                    <div className="absolute bottom-0 p-6 md:p-10">
+                      <span className="bg-red-600 text-[10px] font-black px-2 py-1 rounded mb-4 inline-block uppercase tracking-widest animate-pulse">
+                        MAIS BUSCADA
+                      </span>
+                      <h3 className="text-2xl md:text-4xl font-black leading-tight group-hover:text-yellow-500 transition">
+                        {featuredNews.title}
+                      </h3>
+                      <p className="text-slate-300 text-sm mt-2 line-clamp-2 max-w-2xl">
+                        {featuredNews.description}
+                      </p>
+                      <div className="flex items-center gap-4 mt-4 text-[10px] font-bold text-slate-400 uppercase">
+                        <span>Fonte: {featuredNews.source.name}</span>
+                        <span>•</span>
+                        <span>{new Date(featuredNews.publishedAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              ) : (
+                <div className="aspect-video bg-slate-900 rounded-2xl animate-pulse flex items-center justify-center">
+                  <p className="text-slate-500">Localizando notícia viral...</p>
                 </div>
-              </div>
+              )}
             </section>
 
             <section>
