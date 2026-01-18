@@ -240,6 +240,51 @@ export default function App() {
         </div>
       </main>
 
+
+      <footer className="bg-[#020617] border-t border-slate-800 text-slate-400 py-12 px-4 mt-20">
+        <div className="max-w-7xl mx-auto space-y-12">
+
+          {/* 1. TEXTO DE MISSÃO E AUTORIDADE */}
+          <div className="text-center space-y-4 max-w-4xl mx-auto">
+            <p className="text-xs md:text-sm leading-relaxed">
+              Portal dedicado a <span className="text-white font-bold">análises estatísticas avançadas</span>, processamento de <span className="text-white font-bold">dados em tempo real</span> e tecnologia de IA aplicada ao esporte.
+              Nossa missão é fornecer transparência e ferramentas de precisão para auxiliar na tomada de decisão baseada em números e algoritmos de <span className="text-yellow-500 font-bold uppercase tracking-tighter">Live Scanner</span>.
+            </p>
+          </div>
+
+          {/* 2. AVISOS LEGAIS (CONFORME CONTEÚDO DE TRADING ESPORTIVO) */}
+          <div className="space-y-6 text-[10px] md:text-xs leading-relaxed border-y border-slate-800/50 py-8">
+            <p>
+              <span className="text-yellow-500 font-bold uppercase mr-2">⚠️ Aviso de Risco de Alta Volatilidade:</span>
+              As análises esportivas e projeções de IA envolvem riscos baseados na imprevisibilidade inerente aos eventos competitivos. O uso de alavancagem em mercados de odds ao vivo pode resultar em perdas rápidas do capital alocado. Esta plataforma não é adequada para pessoas que buscam garantias de lucro ou que não possuam gestão de banca rigorosa.
+            </p>
+            <p>
+              <span className="text-white font-bold italic">Isenção de Responsabilidade:</span> Todo o conteúdo do BetVision — incluindo algoritmos de "Tendência de Green", campos táticos e previsões — tem caráter exclusivamente informativo e de entretenimento. Não somos uma casa de apostas, não processamos transações financeiras de jogo e não oferecemos consultoria financeira personalizada. A decisão final de entrada em qualquer mercado é de inteira responsabilidade do usuário, que deve estar ciente das leis de jurisdição local sobre apostas.
+            </p>
+          </div>
+
+          {/* 3. LINKS E COPYRIGHT */}
+          <div className="flex flex-col items-center space-y-6">
+            <nav className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-[11px] font-bold uppercase tracking-widest text-slate-500">
+              <a href="#" className="hover:text-yellow-500 transition">Seja um Afiliado</a>
+              <a href="#" className="hover:text-yellow-500 transition">Termos e Condições</a>
+              <a href="#" className="hover:text-yellow-500 transition">Política de Dados</a>
+              <a href="#" className="hover:text-yellow-500 transition">Suporte VIP</a>
+            </nav>
+
+            <div className="text-center space-y-1">
+              <p className="text-[10px] font-medium text-slate-600 uppercase tracking-widest">
+                BETVISION AI © 2024-2026 | INTELIGÊNCIA EM CAMPO
+              </p>
+              <p className="text-[9px] text-slate-700 uppercase tracking-tighter">
+                Plataforma de Alta Performance desenvolvida para Traders Esportivos Profissionais
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </footer>
+
       {/* MODAL COM AVISO DE ATUALIZAÇÃO */}
       {selectedGame && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-2 md:p-4">
