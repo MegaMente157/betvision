@@ -1,9 +1,11 @@
-import { Activity, TrendingUp, BarChart3, Clock, Zap, Info, Users, X } from 'lucide-react';
+import {
+  Activity, TrendingUp, BarChart3, Clock, Zap, Info, Users, X,
+  Search, Globe, Star, Newspaper, MessageSquare, ChevronUp, ChevronDown
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { footballApi } from './services/api';
-import { newsApi } from './services/api';
-import { Search, Globe, Star, Newspaper } from 'lucide-react';
+import { footballApi, newsApi } from './services/api';
+
 
 // Interface para organizar os dados da API
 interface LiveGame {
@@ -43,6 +45,20 @@ export default function App() {
   const [selectedGame, setSelectedGame] = useState<LiveGame | null>(null);
   const [analysisNews, setAnalysisNews] = useState<any[]>([]); // Para as 4 notícias reais
   const [searchTerm, setSearchTerm] = useState(''); // Para a busca
+  const [userTips, setUserTips] = useState([
+    { id: 1, user: "Trader_SP", match: "Real x Barça", tip: "Ambas Marcam", votes: 12 },
+    { id: 2, user: "GreenMaster", match: "Flamengo x Vasco", tip: "Vitória Casa", votes: 8 }
+  ]);
+  const [newTip, setNewTip] = useState({ user: '', match: '', tip: '' });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [communityTopics, setCommunityTopics] = useState(() => {
+    // Tenta carregar os palpites salvos no seu computador
+    const saved = localStorage.getItem('betvision_tips');
+    return saved ? JSON.parse(saved) : [
+      { id: 1, user: "Gabiis", avatar: "https://i.pravatar.cc/150?u=1", title: "Real Madrid x City", tip: "Over 2.5 Gols", comments: 12 },
+      { id: 2, user: "Jackson", avatar: "https://i.pravatar.cc/150?u=2", title: "Flamengo x Vasco", tip: "Vitória do Fla", comments: 5 }
+    ];
+  });
 
   useEffect(() => {
     const fetchGames = async () => {
@@ -59,6 +75,9 @@ export default function App() {
         setLoading(false);
       }
     };
+
+
+    localStorage.setItem('betvision_tips', JSON.stringify(communityTopics));
 
     // Substitua a função fetchFeaturedNews por esta versão "blindada":
     const fetchFeaturedNews = async () => {
@@ -157,7 +176,7 @@ export default function App() {
     }, 600000);
     return () => { clearTimeout(timer); clearInterval(interval); };
 
-  }, [searchTerm]);
+  }, [searchTerm, communityTopics]);
 
 
   const getAISuggestion = (homeGoals: number, awayGoals: number, elapsed: number) => {
@@ -221,6 +240,60 @@ export default function App() {
                   <p className="text-slate-500">Localizando notícia viral...</p>
                 </div>
               )}
+            </section>
+            
+            {/* SEÇÃO MURAL DA COMUNIDADE (ESTILO FÓRUM) */}
+            <section className="mt-12">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="bg-cyan-500/10 p-2 rounded-lg">
+                    <MessageSquare className="w-5 h-5 text-cyan-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black uppercase tracking-tighter text-white">Mural da Comunidade</h2>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase">Palpites e Análises Recentes</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => alert('Sistema de postagem em breve!')}
+                  className="bg-cyan-500 hover:bg-cyan-400 text-black font-black text-[10px] px-4 py-2 rounded-xl transition uppercase"
+                >
+                  Novo Tópico
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {communityTopics && communityTopics.map((topic: any) => (
+                  <div key={topic.id} className="bg-[#0f172a] border border-slate-800 p-3 rounded-2xl flex items-center gap-4 hover:bg-[#1e293b]/50 transition group cursor-pointer relative overflow-hidden">
+                    {/* Indicador Lateral Ciano */}
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-cyan-500 opacity-50 group-hover:opacity-100 transition" />
+
+                    {/* Avatar Compacto */}
+                    <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-slate-700">
+                      <img src={topic.avatar} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition duration-500" />
+                    </div>
+
+                    {/* Conteúdo do Tópico */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-[12px] font-extrabold text-white leading-tight mb-1 truncate group-hover:text-cyan-400 transition">
+                        {topic.title}
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-slate-500 font-bold italic">@{topic.user}</span>
+                        <span className="text-[9px] bg-slate-800 text-slate-400 px-1.5 rounded uppercase font-black tracking-tighter">
+                          {topic.tip}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Balão de Comentários */}
+                    <div className="flex items-center gap-1.5 bg-[#020617] px-2.5 py-1.5 rounded-xl border border-slate-800">
+                      <MessageSquare size={12} className="text-slate-600" />
+                      <span className="text-[11px] font-black text-slate-400">{topic.comments}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </section>
 
             <section className="space-y-6">
@@ -286,7 +359,25 @@ export default function App() {
                 )}
               </div>
             </section>
+
+
+
+            <div className="bg-yellow-500 py-1.5 overflow-hidden flex whitespace-nowrap border-b border-black/10">
+              <div className="flex animate-ticker gap-10">
+                {userTips.map((t) => (
+                  <div key={t.id} className="flex items-center gap-2 text-black font-bold text-[10px] uppercase">
+                    <span className="bg-black text-white px-1 rounded text-[8px]">TIP</span>
+                    <span>{t.user}:</span>
+                    <span className="opacity-80">{t.match}</span>
+                    <span className="bg-white/30 px-1.5 rounded">{t.tip}</span>
+                    <span className="text-black/50 ml-2">🔥 {t.votes} votos</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
+
+
 
           <div className="lg:col-span-4">
             <div className="bg-[#0f172a] rounded-2xl border border-slate-800 p-6 sticky top-24 shadow-2xl shadow-yellow-500/5">
@@ -346,50 +437,66 @@ export default function App() {
       </main>
 
 
-      <footer className="bg-[#020617] border-t border-slate-800 text-slate-400 py-12 px-4 mt-20">
-        <div className="max-w-7xl mx-auto space-y-12">
+      <footer className="mt-20 border-t border-slate-800 bg-[#020617] pt-12 pb-6">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
 
-          {/* 1. TEXTO DE MISSÃO E AUTORIDADE */}
-          <div className="text-center space-y-4 max-w-4xl mx-auto">
-            <p className="text-xs md:text-sm leading-relaxed">
-              Portal dedicado a <span className="text-white font-bold">análises estatísticas avançadas</span>, processamento de <span className="text-white font-bold">dados em tempo real</span> e tecnologia de IA aplicada ao esporte.
-              Nossa missão é fornecer transparência e ferramentas de precisão para auxiliar na tomada de decisão baseada em números e algoritmos de <span className="text-yellow-500 font-bold uppercase tracking-tighter">Live Scanner</span>.
-            </p>
-          </div>
-
-          {/* 2. AVISOS LEGAIS (CONFORME CONTEÚDO DE TRADING ESPORTIVO) */}
-          <div className="space-y-6 text-[10px] md:text-xs leading-relaxed border-y border-slate-800/50 py-8">
-            <p>
-              <span className="text-yellow-500 font-bold uppercase mr-2">⚠️ Aviso de Risco de Alta Volatilidade:</span>
-              As análises esportivas e projeções de IA envolvem riscos baseados na imprevisibilidade inerente aos eventos competitivos. O uso de alavancagem em mercados de odds ao vivo pode resultar em perdas rápidas do capital alocado. Esta plataforma não é adequada para pessoas que buscam garantias de lucro ou que não possuam gestão de banca rigorosa.
-            </p>
-            <p>
-              <span className="text-white font-bold italic">Isenção de Responsabilidade:</span> Todo o conteúdo do BetVision — incluindo algoritmos de "Tendência de Green", campos táticos e previsões — tem caráter exclusivamente informativo e de entretenimento. Não somos uma casa de apostas, não processamos transações financeiras de jogo e não oferecemos consultoria financeira personalizada. A decisão final de entrada em qualquer mercado é de inteira responsabilidade do usuário, que deve estar ciente das leis de jurisdição local sobre apostas.
-            </p>
-          </div>
-
-          {/* 3. LINKS E COPYRIGHT */}
-          <div className="flex flex-col items-center space-y-6">
-            <nav className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-[11px] font-bold uppercase tracking-widest text-slate-500">
-              <a href="#" className="hover:text-yellow-500 transition">Seja um Afiliado</a>
-              <a href="#" className="hover:text-yellow-500 transition">Termos e Condições</a>
-              <a href="#" className="hover:text-yellow-500 transition">Política de Dados</a>
-              <a href="#" className="hover:text-yellow-500 transition">Suporte VIP</a>
-            </nav>
-
-            <div className="text-center space-y-1">
-              <p className="text-[10px] font-medium text-slate-600 uppercase tracking-widest">
-                BETVISION AI © 2024-2026 | INTELIGÊNCIA EM CAMPO
+            {/* COLUNA 1: LOGO E SOBRE */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-yellow-500 rounded flex items-center justify-center font-black text-black">B</div>
+                <span className="text-xl font-black tracking-tighter text-white uppercase italic">Bet<span className="text-yellow-500">Vision</span></span>
+              </div>
+              <p className="text-slate-500 text-xs leading-relaxed">
+                A plataforma definitiva para quem busca análise de dados e inteligência esportiva aplicada ao futebol mundial.
               </p>
-              <p className="text-[9px] text-slate-700 uppercase tracking-tighter">
-                Plataforma de Alta Performance desenvolvida para Traders Esportivos Profissionais
+            </div>
+
+            {/* COLUNA 2: LINKS RÁPIDOS */}
+            <div>
+              <h4 className="text-white font-bold text-sm uppercase mb-4 tracking-wider">Navegação</h4>
+              <ul className="space-y-2 text-xs text-slate-400 font-medium">
+                <li className="hover:text-yellow-500 cursor-pointer transition">Painel de Jogos</li>
+                <li className="hover:text-yellow-500 cursor-pointer transition">Análises Recentes</li>
+                <li className="hover:text-yellow-500 cursor-pointer transition">Estatísticas Pro</li>
+                <li className="hover:text-yellow-500 cursor-pointer transition">Scanner de Ligas</li>
+              </ul>
+            </div>
+
+            {/* COLUNA 3: COMUNIDADE */}
+            <div>
+              <h4 className="text-white font-bold text-sm uppercase mb-4 tracking-wider">Social</h4>
+              <ul className="space-y-2 text-xs text-slate-400 font-medium">
+                <li className="hover:text-yellow-500 cursor-pointer transition">Telegram Vip</li>
+                <li className="hover:text-yellow-500 cursor-pointer transition">Instagram</li>
+                <li className="hover:text-yellow-500 cursor-pointer transition">Twitter (X)</li>
+                <li className="hover:text-yellow-500 cursor-pointer transition">YouTube</li>
+              </ul>
+            </div>
+
+            {/* COLUNA 4: JOGO RESPONSÁVEL */}
+            <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800">
+              <div className="flex items-center gap-2 mb-2 text-yellow-500">
+                <span className="text-[18px] font-black">18+</span>
+                <h4 className="text-[10px] font-bold uppercase tracking-widest text-white">Responsabilidade</h4>
+              </div>
+              <p className="text-[9px] text-slate-500 leading-tight italic">
+                O conteúdo deste site é informativo. Apostas envolvem risco financeiro. Jogue com responsabilidade e autodisciplina.
               </p>
             </div>
           </div>
 
+          {/* BARRA INFERIOR DE COPYRIGHT */}
+          <div className="border-t border-slate-800/50 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-bold text-slate-600 uppercase">
+            <p>© 2026 BETVISION ANALYTICS - TODOS OS DIREITOS RESERVADOS</p>
+            <div className="flex gap-6">
+              <span className="hover:text-slate-400 cursor-pointer">Privacidade</span>
+              <span className="hover:text-slate-400 cursor-pointer">Termos de Uso</span>
+              <span className="hover:text-slate-400 cursor-pointer">Suporte</span>
+            </div>
+          </div>
         </div>
       </footer>
-
       {/* MODAL COM AVISO DE ATUALIZAÇÃO */}
       {selectedGame && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-2 md:p-4">
