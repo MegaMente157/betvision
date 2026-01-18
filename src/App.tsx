@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { footballApi } from './services/api';
 import { newsApi } from './services/api';
+import { Search, Globe, Star, Newspaper } from 'lucide-react';
 
 // Interface para organizar os dados da API
 interface LiveGame {
@@ -40,6 +41,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [featuredNews, setFeaturedNews] = useState<any>(null);
   const [selectedGame, setSelectedGame] = useState<LiveGame | null>(null);
+  const [analysisNews, setAnalysisNews] = useState<any[]>([]); // Para as 4 notícias reais
+  const [searchTerm, setSearchTerm] = useState(''); // Para a busca
 
   useEffect(() => {
     const fetchGames = async () => {
@@ -62,7 +65,7 @@ export default function App() {
       try {
         const response = await newsApi.get('/everything', {
           params: {
-            q: 'futebol brasileiro OR "Premier League" OR "La Liga" OR "Serie A" OR "Bundesliga" OR "Ligue 1" OR "UEFA Champions League"',
+            q: 'futebol brasileiro OR Premier League OR La Liga OR Serie A OR Bundesliga OR Ligue 1 OR UEFA Champions League',
             language: 'pt',
             sortBy: 'publishedAt',
             pageSize: 1,
@@ -89,14 +92,73 @@ export default function App() {
       }
     };
 
+    const searchAnyTeam = async () => {
+      // Se não tiver busca, ele traz notícias gerais de futebol
+      const query = searchTerm.length > 2
+        ? `(${searchTerm}) AND (futebol OR paulistao OR football OR soccer OR la liga OR premier league OR serie a OR bundesliga OR ligue 1 OR "Champions League")`
+        : 'futebol brasileiro OR "Champions League"';
+
+      try {
+        const response = await newsApi.get('/everything', {
+          params: {
+            q: query,
+            language: 'pt',
+            sortBy: 'relevancy',
+            pageSize: 10,
+            apiKey: '4593b9c602cf4db69f728b30136b9563'
+          }
+        });
+
+        if (response.data.articles) {
+          setAnalysisNews(response.data.articles);
+        }
+      } catch (error) {
+        console.error("Erro na busca global");
+      }
+    };
+
+
+    const fetchAnalysisNews = async () => {
+      try {
+        const response = await newsApi.get('/everything', {
+          params: {
+            q: 'futebol brasileiro OR "Premier League" OR "Champions League"',
+            language: 'pt',
+            sortBy: 'relevancy',
+            pageSize: 10, // Buscamos 10 para ter margem de filtro
+            apiKey: '4593b9c602cf4db69f728b30136b9563'
+          }
+        });
+        if (response.data.articles) {
+          setAnalysisNews(response.data.articles);
+        }
+      } catch (error) {
+        console.warn("Erro ao buscar análises, usando dados padrão.");
+        // Fallback caso a API falhe
+        setAnalysisNews([
+          { title: "Análise: Flamengo mantém favoritismo no Maracanã", source: { name: "BetVision" }, urlToImage: "https://images.unsplash.com/photo-1522778119026-d647f0596c20" },
+          { title: "Estatísticas: Palmeiras e a força da bola parada", source: { name: "BetVision" }, urlToImage: "https://images.unsplash.com/photo-1522778119026-d647f0596c20" },
+        ]);
+      }
+    };
+
+    fetchAnalysisNews(); // Chama a função
     fetchGames();
     fetchFeaturedNews();
+
+    // Debounce: espera o usuário parar de digitar por 500ms antes de chamar a API
+    const timer = setTimeout(() => {
+      searchAnyTeam();
+    }, 1000);
+
     const interval = setInterval(() => {
       fetchGames();
       fetchFeaturedNews();
     }, 600000);
-    return () => clearInterval(interval);
-  }, []);
+    return () => { clearTimeout(timer); clearInterval(interval); };
+
+  }, [searchTerm]);
+
 
   const getAISuggestion = (homeGoals: number, awayGoals: number, elapsed: number) => {
     const totalGoals = homeGoals + awayGoals;
@@ -161,24 +223,67 @@ export default function App() {
               )}
             </section>
 
-            <section>
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-yellow-500" />
-                Análises Recentes (Time do Coração)
-              </h2>
+            <section className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <h2 className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-yellow-500" />
+                  <span className="bg-gradient-to-r from-white to-slate-500 bg-clip-text text-transparent">
+                    Live Insights
+                  </span>
+                  <span className="text-yellow-500">& Scanner</span>
+                </h2>
+                {/* CAIXA DE PESQUISA */}
+                <div className="relative w-full md:w-80">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Buscar time (ex: Flamengo, Real...)"
+                    className="w-full bg-[#0f172a] border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-xs text-white focus:border-yellow-500 outline-none transition-all"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[1, 2, 3, 4].map((item) => (
-                  <div key={item} className="bg-[#0f172a] rounded-xl border border-slate-800 overflow-hidden hover:border-slate-700 transition cursor-pointer group">
-                    <div className="aspect-video bg-slate-900 relative overflow-hidden">
-                      <img src={`https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=400`} alt="Partida" className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-                    </div>
-                    <div className="p-4">
-                      <span className="text-xs text-slate-500 flex items-center gap-1"><Clock size={12} /> Postado agora</span>
-                      <Link to={`/post/${item}`}><h4 className="font-bold mt-1 mb-2 hover:text-yellow-500 transition">Estatísticas Avançadas: Última atuação e Escalação</h4></Link>
-                      <div className="flex items-center gap-2 text-xs text-green-400"><TrendingUp className="w-3 h-3" /><span>Tendência de Green: 85%</span></div>
-                    </div>
-                  </div>
-                ))}
+                {analysisNews && analysisNews.length > 0 ? (
+                  analysisNews
+                    .slice(0, 6) // Mostra as 4 principais do time pesquisado
+                    .map((article, index) => (
+                      <a key={index} href={article.url} target="_blank" rel="noopener noreferrer"
+                        className="bg-[#0f172a] rounded-xl border border-slate-800 overflow-hidden hover:border-yellow-500/50 transition flex h-28 group">
+
+                        <div className="w-32 h-full overflow-hidden shrink-0 bg-slate-900">
+                          <img
+                            src={article.urlToImage || "https://images.unsplash.com/photo-1574629810360-7efbbe195018"}
+                            className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
+                            alt=""
+                          />
+                        </div>
+
+                        <div className="p-3 flex flex-col justify-between overflow-hidden w-full">
+                          <div>
+                            <h4 className="font-extrabold text-[13px] text-white line-clamp-2 leading-tight group-hover:text-yellow-500 transition">
+                              {article.title}
+                            </h4>
+                            <span className="text-[9px] text-slate-500 font-bold uppercase mt-1 block">
+                              {article.source?.name}
+                            </span>
+                          </div>
+
+
+                          <div className="mt-3 flex items-center gap-2 border-t border-slate-800/50 pt-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
+                            <p className="text-[10px] text-slate-300 font-medium leading-tight">
+                              Acesse a notícia e <span className="text-yellow-500 font-bold">valide sua análise</span> com nossos dados.
+                            </p>
+                          </div>
+                        </div>
+                      </a>
+                    ))
+                ) : (
+                  <p className="col-span-full text-center text-slate-500 text-xs py-10">Buscando notícias...</p>
+                )}
               </div>
             </section>
           </div>
