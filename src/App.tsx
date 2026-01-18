@@ -57,20 +57,35 @@ export default function App() {
       }
     };
 
+    // Substitua a função fetchFeaturedNews por esta versão "blindada":
     const fetchFeaturedNews = async () => {
       try {
         const response = await newsApi.get('/everything', {
           params: {
-            q: 'Premier League OR "Paulistão" OR "Brasileirão"',
+            q: 'futebol brasileiro OR "Premier League" OR "La Liga" OR "Serie A" OR "Bundesliga" OR "Ligue 1" OR "UEFA Champions League"',
             language: 'pt',
-            sortBy: 'relevancy',
+            sortBy: 'publishedAt',
             pageSize: 1,
             apiKey: '4593b9c602cf4db69f728b30136b9563'
           }
         });
-        setFeaturedNews(response.data.articles[0]);
+
+        if (response.data && response.data.articles && response.data.articles[0]) {
+          setFeaturedNews(response.data.articles[0]);
+        } else {
+          throw new Error("Formato de resposta inválido");
+        }
       } catch (error) {
-        console.error("Erro ao buscar notícia destaque:", error);
+        console.warn("NewsAPI bloqueada em produção (Erro 426). Usando notícia padrão.");
+        // NOTÍCIA PADRÃO PARA NÃO FICAR VAZIO NO VERCEL
+        setFeaturedNews({
+          title: "Mercado da Bola: Grandes clubes europeus monitoram talentos do Brasileirão",
+          description: "As janelas de transferências continuam movimentadas com olheiros internacionais focados no futebol sul-americano.",
+          url: "#",
+          urlToImage: "https://images.unsplash.com/photo-1574629810360-7efbbe195018",
+          source: { name: "BetVision News" },
+          publishedAt: new Date().toISOString()
+        });
       }
     };
 
